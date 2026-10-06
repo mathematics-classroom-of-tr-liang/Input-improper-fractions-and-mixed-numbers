@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>假分數與帶分數特訓營 - 看圖填數篇</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .fraction-line {
+      border-top: 3.5px solid #1e293b;
+    }
+    .input-box-active {
+      border-color: #6366f1 !important;
+      background-color: #eef2ff !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+      animation: pulse-border 1.5s infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: #6366f1; }
+      50% { border-color: #818cf8; }
+    }
+    .custom-keypad-btn {
+      transition: all 0.1s ease;
+    }
+    .custom-keypad-btn:active {
+      transform: scale(0.92);
+    }
+    /* Custom scrollbar */
+    .canvas-scroll::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .canvas-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    .canvas-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col justify-between p-2 md:p-4">
+
+  <!-- 頂部標題與功能控制列 -->
+  <header class="bg-white rounded-2xl shadow-sm p-3 md:p-4 mb-3 flex flex-col md:flex-row justify-between items-center gap-3 border-b-4 border-indigo-500">
+    <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow">
+          <i class="fa-solid fa-eye"></i>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black text-indigo-900 tracking-wide">假分數與帶分數特訓營</h1>
+          <p class="text-xs md:text-sm text-slate-500 font-bold">看圖識數篇：觀察圖形表徵 ➔ 填入假分數與帶分數</p>
+        </div>
+      </div>
+
+      <!-- 右側輔助功能按鈕區 -->
+      <div class="flex items-center gap-2">
+        <button id="btnSound" onclick="toggleSound()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-1 transition text-sm border border-slate-300 min-h-[44px]">
+          <i class="fa-solid fa-volume-high text-indigo-600" id="soundIcon"></i>
+          <span class="hidden sm:inline">聲音</span>
+        </button>
+        <button onclick="resetCurrentInputs()" class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded-xl flex items-center gap-1 transition text-sm border border-amber-300 min-h-[44px]">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>重填</span>
+        </button>
+        <button onclick="nextQuestion()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-1 shadow transition text-sm min-h-[44px]">
+          <i class="fa-solid fa-shuffle"></i>
+          <span>換下一題</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 得分與關卡進度統計 -->
+    <div class="flex items-center gap-4 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-200">
+      <div class="flex items-center gap-1.5 font-bold text-indigo-900 text-sm md:text-base">
+        <i class="fa-solid fa-star text-amber-500 text-lg"></i>
+        <span>答對題數：<span id="scoreText" class="text-xl font-black text-indigo-600">0</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 上半部：圖形表徵展示區 (約占上半部) -->
+  <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 mb-3 flex flex-col items-center">
+    <!-- 切換圖形類別與狀態提示 -->
+    <div class="w-full flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2">
+        <span class="bg-indigo-100 text-indigo-800 text-xs font-black px-2.5 py-1 rounded-full flex items-center gap-1">
+          <i class="fa-solid fa-shapes"></i> 圖形表徵
+        </span>
+        <span class="text-xs md:text-sm font-bold text-slate-500">請仔細觀察塗色的整體與小區塊：</span>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button id="btnPie" onclick="switchShape('pie')" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow">
+          <i class="fa-solid fa-chart-pie"></i> 圓形
+        </button>
+        <button id="btnBar" onclick="switchShape('bar')" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-200 text-slate-700 hover:bg-slate-300">
+          <i class="fa-solid fa-square-poll-horizontal"></i> 長方形
+        </button>
+      </div>
+    </div>
+
+    <!-- SVG 動態圖形容器 -->
+    <div id="visualDisplayContainer" class="canvas-scroll w-full min-h-[200px] md:min-h-[220px] max-h-[300px] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 flex flex-wrap items-center justify-center p-3 gap-4 overflow-y-auto">
+      <!-- JS 動態生成 SVG 塗色圖形 -->
+    </div>
+  </section>
+
+  <!-- 下半部：學生填答與數字鍵盤區 -->
+  <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+    
+    <!-- 左右雙分數填填看卡片 (占 7/12) -->
+    <section class="lg:col-span-7 flex flex-col justify-between gap-3">
+
+      <!-- 操作引導提示 -->
+      <div id="stepInstructionBanner" class="bg-indigo-900 text-white p-3 rounded-2xl shadow border-b-4 border-indigo-950 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="stepBadge" class="bg-amber-400 text-indigo-950 px-2.5 py-1 rounded-lg font-black text-xs">
+            步驟 1 / 2
+          </span>
+          <span id="stepInstructionText" class="text-sm md:text-base font-bold text-amber-200">
+            <!-- 動態寫入步驟指引 -->
+          </span>
+        </div>
+        <i class="fa-solid fa-keyboard text-indigo-300 text-xl"></i>
+      </div>
+
+      <!-- 左右卡片容器 (隨機變換左右位置) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1" id="cardsWrapper">
+        
+        <!-- 左側填答卡片 -->
+        <div id="leftCard" class="bg-white rounded-2xl p-4 border-4 border-slate-200 shadow-sm flex flex-col items-center justify-between relative transition-all">
+          <div class="w-full flex items-center justify-between mb-2">
+            <span id="leftCardTitle" class="font-black text-sm md:text-base text-slate-700 flex items-center gap-1.5">
+              <!-- 左標題 -->
+            </span>
+            <span id="leftCardBadge" class="text-[11px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+              等待輸入
+            </span>
+          </div>
+
+          <!-- 輸入區域容器 -->
+          <div class="my-auto py-2 flex items-center justify-center w-full min-h-[110px]" id="leftInputContainer">
+            <!-- JS 動態渲染 輸入框 -->
+          </div>
+
+          <!-- 說明細節與提示 -->
+          <div id="leftHintText" class="text-xs font-bold text-slate-400 text-center w-full pt-2 border-t border-slate-100">
+            請點擊或依指示輸入
+          </div>
+        </div>
+
+        <!-- 右側填答卡片 -->
+        <div id="rightCard" class="bg-white rounded-2xl p-4 border-4 border-slate-200 shadow-sm flex flex-col items-center justify-between relative opacity-60 transition-all">
+          <div class="w-full flex items-center justify-between mb-2">
+            <span id="rightCardTitle" class="font-black text-sm md:text-base text-slate-700 flex items-center gap-1.5">
+              <!-- 右標題 -->
+            </span>
+            <span id="rightCardBadge" class="text-[11px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+              等待左側完成
+            </span>
+          </div>
+
+          <!-- 輸入區域容器 -->
+          <div class="my-auto py-2 flex items-center justify-center w-full min-h-[110px]" id="rightInputContainer">
+            <!-- JS 動態渲染 輸入框 -->
+          </div>
+
+          <!-- 說明細節與提示 -->
+          <div id="rightHintText" class="text-xs font-bold text-slate-400 text-center w-full pt-2 border-t border-slate-100">
+            請先完成左側卡片
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 檢查答案與對照按鈕 -->
+      <button id="btnCheckAnswer" onclick="checkAnswer()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2 min-h-[50px]">
+        <i class="fa-solid fa-circle-check text-xl"></i>
+        <span>確認並檢查數值 ✅</span>
+      </button>
+
+    </section>
+
+    <!-- 右側：數字鍵盤區 (占 5/12) -->
+    <section class="lg:col-span-5 bg-white rounded-2xl p-4 shadow-sm border-2 border-indigo-200 flex flex-col justify-between">
+      <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+        <h3 class="font-black text-sm md:text-base text-indigo-900 flex items-center gap-2">
+          <i class="fa-solid fa-calculator text-indigo-600"></i>
+          <span>數字鍵盤 (點擊輸入)</span>
+        </h3>
+        <span id="activeTargetLabel" class="text-xs font-black px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg">
+          正在輸入：分母
+        </span>
+      </div>
+
+      <!-- 數字鍵盤按鈕矩陣 (1-9, 0, 刪除, 下一步) -->
+      <div class="grid grid-cols-3 gap-2 my-auto">
+        <button onclick="keypadInput(1)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">1</button>
+        <button onclick="keypadInput(2)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">2</button>
+        <button onclick="keypadInput(3)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">3</button>
+        <button onclick="keypadInput(4)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">4</button>
+        <button onclick="keypadInput(5)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">5</button>
+        <button onclick="keypadInput(6)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">6</button>
+        <button onclick="keypadInput(7)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">7</button>
+        <button onclick="keypadInput(8)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">8</button>
+        <button onclick="keypadInput(9)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">9</button>
+        
+        <!-- 退格鍵 -->
+        <button onclick="keypadBackspace()" class="custom-keypad-btn py-3.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-black text-xl rounded-xl border border-rose-300 shadow-sm flex items-center justify-center gap-1">
+          <i class="fa-solid fa-backspace"></i>
+        </button>
+
+        <!-- 數字 0 -->
+        <button onclick="keypadInput(0)" class="custom-keypad-btn py-3.5 bg-slate-100 hover:bg-indigo-50 text-slate-800 font-black text-2xl rounded-xl border border-slate-300 shadow-sm flex items-center justify-center">0</button>
+        
+        <!-- 下一個欄位 / 確認按鈕 -->
+        <button onclick="keypadNext()" class="custom-keypad-btn py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base rounded-xl shadow-md flex items-center justify-center gap-1">
+          <span>下一步</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- 順序規範提示說明 -->
+      <div class="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
+        <p class="font-bold text-slate-800 flex items-center gap-1">
+          <i class="fa-solid fa-circle-info text-indigo-500"></i> 輸入規範 (點擊數字自動跳下一格)：
+        </p>
+        <p>• <strong>假分數：</strong>先輸入「分母」➔ 自動跳「分子」</p>
+        <p>• <strong>帶分數：</strong>先輸入「整數」➔ 自動跳「分母」➔ 自動跳「分子」</p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 讚美與對照關卡 Modal -->
+  <div id="praiseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border-4 border-amber-300 text-center transform scale-90 transition-transform duration-300" id="modalContent">
+      <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-500 text-3xl shadow-inner">
+        <i class="fa-solid fa-award animate-bounce"></i>
+      </div>
+      <h3 class="text-2xl font-black text-slate-800 mb-1">太讚了！兩邊都答對了！</h3>
+      <p class="text-xs md:text-sm font-bold text-slate-500 mb-4">你看，這兩種表示方式所代表的「圖形量」是完全一樣的喔！</p>
+      
+      <!-- 左右數值同步視覺對照卡片 -->
+      <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5" id="modalComparisonBox">
+        <!-- JS 動態生成同步對照 -->
+      </div>
+
+      <button onclick="nextQuestion()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-lg rounded-2xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2 min-h-[48px]">
+        <i class="fa-solid fa-arrow-right-long"></i>
+        <span>挑戰下一題</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // 1. 題庫與核心狀態
+    // -------------------------------------------------------------
+    const questionBank = [
+      { id: 1, whole: 1, num: 1, den: 4, improperNum: 5, prompt: '1 又 1/4 (即 5/4)' },
+      { id: 2, whole: 1, num: 2, den: 3, improperNum: 5, prompt: '1 又 2/3 (即 5/3)' },
+      { id: 3, whole: 2, num: 1, den: 2, improperNum: 5, prompt: '2 又 1/2 (即 5/2)' },
+      { id: 4, whole: 1, num: 3, den: 4, improperNum: 7, prompt: '1 又 3/4 (即 7/4)' },
+      { id: 5, whole: 2, num: 1, den: 3, improperNum: 7, prompt: '2 又 1/3 (即 7/3)' },
+      { id: 6, whole: 1, num: 2, den: 5, improperNum: 7, prompt: '1 又 2/5 (即 7/5)' },
+      { id: 7, whole: 1, num: 4, den: 5, improperNum: 9, prompt: '1 又 4/5 (即 9/5)' },
+      { id: 8, whole: 2, num: 1, den: 4, improperNum: 9, prompt: '2 又 1/4 (即 9/4)' },
+      { id: 9, whole: 3, num: 1, den: 2, improperNum: 7, prompt: '3 又 1/2 (即 7/2)' },
+      { id: 10, whole: 1, num: 3, den: 5, improperNum: 8, prompt: '1 又 3/5 (即 8/5)' }
+    ];
+
+    let currentQIndex = 0;
+    let currentQuestion = null;
+    let currentShape = 'pie'; // 'pie' 或 'bar'
+    let isSoundOn = true;
+    let scoreCount = 0;
+
+    // 左右卡片隨機配置 ('improper' 或 'mixed')
+    let leftType = 'improper';
+    let rightType = 'mixed';
+
+    // 學生輸入狀態
+    let activeStep = 1; // 1: 正在回答左卡片, 2: 正在回答右卡片
+    let activeField = ''; // 'left-den', 'left-num', 'left-whole', 'right-den', 'right-num', 'right-whole'
+
+    let studentInputs = {
+      leftWhole: '',
+      leftNum: '',
+      leftDen: '',
+      rightWhole: '',
+      rightNum: '',
+      rightDen: ''
+    };
+
+    // Web Audio API 音效
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.12) {
+      if (!isSoundOn) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      const icon = document.getElementById('soundIcon');
+      icon.className = isSoundOn ? 'fa-solid fa-volume-high text-indigo-600' : 'fa-solid fa-volume-xmark text-slate-400';
+    }
+
+    // -------------------------------------------------------------
+    // 2. 初始化與題目載入
+    // -------------------------------------------------------------
+    window.onload = () => {
+      loadQuestion(0);
+    };
+
+    function loadQuestion(index) {
+      currentQIndex = index % questionBank.length;
+      currentQuestion = questionBank[currentQIndex];
+
+      // 1. 隨機決定左卡片是假分數還是帶分數 (50% 機率)
+      if (Math.random() < 0.5) {
+        leftType = 'improper';
+        rightType = 'mixed';
+      } else {
+        leftType = 'mixed';
+        rightType = 'improper';
+      }
+
+      // 2. 重置輸入狀態
+      studentInputs = {
+        leftWhole: '',
+        leftNum: '',
+        leftDen: '',
+        rightWhole: '',
+        rightNum: '',
+        rightDen: ''
+      };
+
+      activeStep = 1; // 預設先做左邊
+
+      // 3. 預設獲取左邊卡片的第一個輸入欄位
+      if (leftType === 'improper') {
+        activeField = 'left-den'; // 假分數：先填分母
+      } else {
+        activeField = 'left-whole'; // 帶分數：先填整數
+      }
+
+      // 4. 渲染 UI
+      renderVisualDisplay();
+      renderInputCards();
+      updateStepUI();
+    }
+
+    function nextQuestion() {
+      closePraiseModal();
+      let newIndex = currentQIndex;
+      if (questionBank.length > 1) {
+        while (newIndex === currentQIndex) {
+          newIndex = Math.floor(Math.random() * questionBank.length);
+        }
+      }
+      loadQuestion(newIndex);
+    }
+
+    function resetCurrentInputs() {
+      studentInputs = {
+        leftWhole: '',
+        leftNum: '',
+        leftDen: '',
+        rightWhole: '',
+        rightNum: '',
+        rightDen: ''
+      };
+      activeStep = 1;
+      activeField = (leftType === 'improper') ? 'left-den' : 'left-whole';
+      renderInputCards();
+      updateStepUI();
+    }
+
+    function switchShape(shape) {
+      currentShape = shape;
+      document.getElementById('btnPie').className = (shape === 'pie')
+        ? 'px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow'
+        : 'px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-200 text-slate-700 hover:bg-slate-300';
+
+      document.getElementById('btnBar').className = (shape === 'bar')
+        ? 'px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-indigo-600 text-white shadow'
+        : 'px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-200 text-slate-700 hover:bg-slate-300';
+
+      renderVisualDisplay();
+    }
+
+    // -------------------------------------------------------------
+    // 3. 上半部：圖形表徵動態繪製
+    // -------------------------------------------------------------
+    function renderVisualDisplay() {
+      const container = document.getElementById('visualDisplayContainer');
+      container.innerHTML = '';
+
+      const { whole, num, den } = currentQuestion;
+      const totalUnits = whole + (num > 0 ? 1 : 0);
+
+      for (let u = 0; u < totalUnits; u++) {
+        const unitCard = document.createElement('div');
+        unitCard.className = 'flex flex-col items-center bg-white p-2.5 rounded-2xl border-2 border-slate-200 shadow-sm relative';
+
+        const title = document.createElement('span');
+        title.className = 'text-[11px] font-black text-slate-400 mb-1';
+        title.textContent = `第 ${u + 1} 個整體`;
+        unitCard.appendChild(title);
+
+        // 判斷此個整體需要塗滿幾個切片
+        let fillSlices = 0;
+        if (u < whole) {
+          fillSlices = den; // 完整的整體
+        } else {
+          fillSlices = num; // 不滿一個的分數部分
+        }
+
+        if (currentShape === 'pie') {
+          unitCard.appendChild(createStaticPieSVG(den, fillSlices));
+        } else {
+          unitCard.appendChild(createStaticBarSVG(den, fillSlices));
+        }
+
+        container.appendChild(unitCard);
+      }
+    }
+
+    // 繪製靜態圓形切片
+    function createStaticPieSVG(den, fillSlices) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '130');
+      svg.setAttribute('height', '130');
+      svg.setAttribute('viewBox', '0 0 100 100');
+
+      const cx = 50, cy = 50, r = 42;
+
+      for (let i = 0; i < den; i++) {
+        const startAngle = (i * 360 / den) - 90;
+        const endAngle = ((i + 1) * 360 / den) - 90;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const x1 = cx + r * Math.cos(Math.PI * startAngle / 180);
+        const y1 = cy + r * Math.sin(Math.PI * startAngle / 180);
+        const x2 = cx + r * Math.cos(Math.PI * endAngle / 180);
+        const y2 = cy + r * Math.sin(Math.PI * endAngle / 180);
+
+        const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+        const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+        const isFilled = i < fillSlices;
+
+        path.setAttribute('d', d);
+        path.setAttribute('fill', isFilled ? '#38bdf8' : '#ffffff');
+        path.setAttribute('stroke', '#475569');
+        path.setAttribute('stroke-width', '1.8');
+
+        svg.appendChild(path);
+      }
+
+      // 外框黑圈
+      const outerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      outerCircle.setAttribute('cx', cx);
+      outerCircle.setAttribute('cy', cy);
+      outerCircle.setAttribute('r', r);
+      outerCircle.setAttribute('fill', 'none');
+      outerCircle.setAttribute('stroke', '#1e293b');
+      outerCircle.setAttribute('stroke-width', '2.5');
+      svg.appendChild(outerCircle);
+
+      return svg;
+    }
+
+    // 繪製靜態長方形切片
+    function createStaticBarSVG(den, fillSlices) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '150');
+      svg.setAttribute('height', '95');
+      svg.setAttribute('viewBox', '0 0 150 95');
+
+      const x = 10, y = 15, width = 130, height = 65;
+      const cellWidth = width / den;
+
+      for (let i = 0; i < den; i++) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x + i * cellWidth);
+        rect.setAttribute('y', y);
+        rect.setAttribute('width', cellWidth);
+        rect.setAttribute('height', height);
+
+        const isFilled = i < fillSlices;
+
+        rect.setAttribute('fill', isFilled ? '#38bdf8' : '#ffffff');
+        rect.setAttribute('stroke', '#475569');
+        rect.setAttribute('stroke-width', '1.8');
+
+        svg.appendChild(rect);
+      }
+
+      // 外框
+      const outerRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      outerRect.setAttribute('x', x);
+      outerRect.setAttribute('y', y);
+      outerRect.setAttribute('width', width);
+      outerRect.setAttribute('height', height);
+      outerRect.setAttribute('fill', 'none');
+      outerRect.setAttribute('stroke', '#1e293b');
+      outerRect.setAttribute('stroke-width', '2.5');
+      outerRect.setAttribute('rx', '4');
+      svg.appendChild(outerRect);
+
+      return svg;
+    }
+
+    // -------------------------------------------------------------
+    // 4. 下半部：填答卡片與輸入框渲染
+    // -------------------------------------------------------------
+    function renderInputCards() {
+      // 渲染左卡片內容
+      renderCardContent('left', leftType);
+      // 渲染右卡片內容
+      renderCardContent('right', rightType);
+    }
+
+    function renderCardContent(side, type) {
+      const titleEl = document.getElementById(`${side}CardTitle`);
+      const containerEl = document.getElementById(`${side}InputContainer`);
+
+      if (type === 'improper') {
+        titleEl.innerHTML = `<i class="fa-solid fa-gem text-amber-500"></i> 假分數表示法`;
+        containerEl.innerHTML = `
+          <div class="flex flex-col items-center">
+            <!-- 分子 (Numerator) -->
+            <button id="${side}-num-btn" onclick="selectField('${side}-num')" class="w-16 h-12 rounded-xl text-2xl font-black flex items-center justify-center border-2 transition ${getFieldClass(side + '-num')}">
+              ${studentInputs[side + 'Num'] || '<span class="text-slate-300 text-sm">分子</span>'}
+            </button>
+            <div class="w-20 fraction-line my-1.5"></div>
+            <!-- 分母 (Denominator) -->
+            <button id="${side}-den-btn" onclick="selectField('${side}-den')" class="w-16 h-12 rounded-xl text-2xl font-black flex items-center justify-center border-2 transition ${getFieldClass(side + '-den')}">
+              ${studentInputs[side + 'Den'] || '<span class="text-slate-300 text-sm">分母</span>'}
+            </button>
+          </div>
+        `;
+      } else {
+        titleEl.innerHTML = `<i class="fa-solid fa-cubes text-purple-500"></i> 帶分數表示法`;
+        containerEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <!-- 整數 (Whole) -->
+            <button id="${side}-whole-btn" onclick="selectField('${side}-whole')" class="w-14 h-16 rounded-xl text-3xl font-black flex items-center justify-center border-2 transition ${getFieldClass(side + '-whole')}">
+              ${studentInputs[side + 'Whole'] || '<span class="text-slate-300 text-xs">整數</span>'}
+            </button>
+
+            <div class="flex flex-col items-center">
+              <!-- 分子 (Numerator) -->
+              <button id="${side}-num-btn" onclick="selectField('${side}-num')" class="w-14 h-10 rounded-xl text-xl font-black flex items-center justify-center border-2 transition ${getFieldClass(side + '-num')}">
+                ${studentInputs[side + 'Num'] || '<span class="text-slate-300 text-xs">分子</span>'}
+              </button>
+              <div class="w-16 fraction-line my-1"></div>
+              <!-- 分母 (Denominator) -->
+              <button id="${side}-den-btn" onclick="selectField('${side}-den')" class="w-14 h-10 rounded-xl text-xl font-black flex items-center justify-center border-2 transition ${getFieldClass(side + '-den')}">
+                ${studentInputs[side + 'Den'] || '<span class="text-slate-300 text-xs">分母</span>'}
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function getFieldClass(fieldKey) {
+      if (activeField === fieldKey) {
+        return 'input-box-active text-indigo-700 bg-indigo-50 border-indigo-500';
+      }
+      return 'bg-slate-50 border-slate-300 text-slate-800 hover:border-indigo-300';
+    }
+
+    function selectField(fieldKey) {
+      // 限制：必須配合步驟（先做完左側才能切換右側）
+      if (activeStep === 1 && fieldKey.startsWith('right')) {
+        showToast('請先完成左側卡片的輸入喔！');
+        return;
+      }
+      activeField = fieldKey;
+      playBeep(450, 'sine', 0.05);
+      renderInputCards();
+      updateStepUI();
+    }
+
+    function updateStepUI() {
+      const leftCard = document.getElementById('leftCard');
+      const rightCard = document.getElementById('rightCard');
+      const leftBadge = document.getElementById('leftCardBadge');
+      const rightBadge = document.getElementById('rightCardBadge');
+
+      const stepBadge = document.getElementById('stepBadge');
+      const instructionText = document.getElementById('stepInstructionText');
+      const activeTargetLabel = document.getElementById('activeTargetLabel');
+
+      if (activeStep === 1) {
+        leftCard.classList.remove('opacity-60');
+        leftCard.classList.add('border-indigo-400', 'shadow-md');
+        rightCard.classList.add('opacity-60');
+        rightCard.classList.remove('border-indigo-400', 'shadow-md');
+
+        leftBadge.textContent = '正在輸入中';
+        leftBadge.className = 'text-[11px] font-black px-2 py-0.5 rounded bg-indigo-100 text-indigo-700';
+        rightBadge.textContent = '等待左側完成';
+        rightBadge.className = 'text-[11px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-400';
+
+        const typeName = (leftType === 'improper') ? '假分數' : '帶分數';
+        stepBadge.textContent = '步驟 1 / 2';
+        instructionText.textContent = `請先看圖輸入左側的「${typeName}」`;
+      } else {
+        leftCard.classList.add('border-emerald-300');
+        leftCard.classList.remove('border-indigo-400');
+        rightCard.classList.remove('opacity-60');
+        rightCard.classList.add('border-indigo-400', 'shadow-md');
+
+        leftBadge.textContent = '已完成 ✓';
+        leftBadge.className = 'text-[11px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-700';
+        rightBadge.textContent = '正在輸入中';
+        rightBadge.className = 'text-[11px] font-black px-2 py-0.5 rounded bg-indigo-100 text-indigo-700';
+
+        const typeName = (rightType === 'improper') ? '假分數' : '帶分數';
+        stepBadge.textContent = '步驟 2 / 2';
+        instructionText.textContent = `太棒了！現在請看圖輸入右側的「${typeName}」`;
+      }
+
+      // 更新右側數字鍵盤的「正在輸入：xxx」標籤
+      let fieldNameText = '分母';
+      if (activeField.endsWith('den')) fieldNameText = '分母 (平分幾份)';
+      else if (activeField.endsWith('num')) fieldNameText = '分子 (塗色份數)';
+      else if (activeField.endsWith('whole')) fieldNameText = '整數 (完整整體數)';
+
+      activeTargetLabel.textContent = `正在輸入：${fieldNameText}`;
+    }
+
+    // -------------------------------------------------------------
+    // 5. 數字鍵盤點擊與輸入邏輯
+    // -------------------------------------------------------------
+    function keypadInput(digit) {
+      if (!activeField) return;
+
+      playBeep(600, 'sine', 0.05);
+
+      const propMap = {
+        'left-whole': 'leftWhole',
+        'left-num': 'leftNum',
+        'left-den': 'leftDen',
+        'right-whole': 'rightWhole',
+        'right-num': 'rightNum',
+        'right-den': 'rightDen'
+      };
+
+      const prop = propMap[activeField];
+      if (prop) {
+        // 單一格子僅放一個數字
+        studentInputs[prop] = digit.toString();
+        renderInputCards();
+        // 自動跳下一格
+        autoAdvanceField();
+      }
+    }
+
+    function autoAdvanceField() {
+      if (activeStep === 1) {
+        if (leftType === 'improper') {
+          if (activeField === 'left-den') {
+            activeField = 'left-num';
+          } else if (activeField === 'left-num') {
+            switchStepToRight();
+          }
+        } else {
+          if (activeField === 'left-whole') {
+            activeField = 'left-den';
+          } else if (activeField === 'left-den') {
+            activeField = 'left-num';
+          } else if (activeField === 'left-num') {
+            switchStepToRight();
+          }
+        }
+      } else {
+        if (rightType === 'improper') {
+          if (activeField === 'right-den') {
+            activeField = 'right-num';
+          }
+        } else {
+          if (activeField === 'right-whole') {
+            activeField = 'right-den';
+          } else if (activeField === 'right-den') {
+            activeField = 'right-num';
+          }
+        }
+      }
+      renderInputCards();
+      updateStepUI();
+    }
+
+    function keypadBackspace() {
+      if (!activeField) return;
+
+      playBeep(350, 'sine', 0.05);
+
+      const propMap = {
+        'left-whole': 'leftWhole',
+        'left-num': 'leftNum',
+        'left-den': 'leftDen',
+        'right-whole': 'rightWhole',
+        'right-num': 'rightNum',
+        'right-den': 'rightDen'
+      };
+
+      const prop = propMap[activeField];
+      if (prop) {
+        if (studentInputs[prop].length > 0) {
+          studentInputs[prop] = '';
+        } else {
+          // 當前欄位已為空時，退格自動退回上一格
+          autoRegressField();
+        }
+        renderInputCards();
+        updateStepUI();
+      }
+    }
+
+    function autoRegressField() {
+      if (activeStep === 2) {
+        if (rightType === 'improper') {
+          if (activeField === 'right-num') activeField = 'right-den';
+          else if (activeField === 'right-den') {
+            activeStep = 1;
+            activeField = 'left-num';
+          }
+        } else {
+          if (activeField === 'right-num') activeField = 'right-den';
+          else if (activeField === 'right-den') activeField = 'right-whole';
+          else if (activeField === 'right-whole') {
+            activeStep = 1;
+            activeField = 'left-num';
+          }
+        }
+      } else {
+        if (leftType === 'improper') {
+          if (activeField === 'left-num') activeField = 'left-den';
+        } else {
+          if (activeField === 'left-num') activeField = 'left-den';
+          else if (activeField === 'left-den') activeField = 'left-whole';
+        }
+      }
+    }
+
+    // 保留相容 keypadNext，直接執行自動跳格
+    function keypadNext() {
+      autoAdvanceField();
+    }
+
+    function switchStepToRight() {
+      activeStep = 2;
+      if (rightType === 'improper') {
+        activeField = 'right-den'; // 先打分母
+      } else {
+        activeField = 'right-whole'; // 先打整數
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 6. 答案驗證與結果同步對照
+    // -------------------------------------------------------------
+    function checkAnswer() {
+      const { whole, num, den, improperNum } = currentQuestion;
+
+      // 取得假分數與帶分數對應的學生輸入數值
+      let userImproperDen = (leftType === 'improper') ? studentInputs.leftDen : studentInputs.rightDen;
+      let userImproperNum = (leftType === 'improper') ? studentInputs.leftNum : studentInputs.rightNum;
+
+      let userMixedWhole = (leftType === 'mixed') ? studentInputs.leftWhole : studentInputs.rightWhole;
+      let userMixedDen = (leftType === 'mixed') ? studentInputs.leftDen : studentInputs.rightDen;
+      let userMixedNum = (leftType === 'mixed') ? studentInputs.leftNum : studentInputs.rightNum;
+
+      // 檢查是否完全填寫
+      if (!userImproperDen || !userImproperNum || !userMixedWhole || !userMixedDen || !userMixedNum) {
+        playBeep(250, 'sawtooth', 0.2);
+        showToast('還有欄位尚未填寫完成喔！請用數字鍵盤依序填入。');
+        return;
+      }
+
+      // 轉為數字進行比對
+      const impDenOk = parseInt(userImproperDen) === den;
+      const impNumOk = parseInt(userImproperNum) === improperNum;
+
+      const mixWholeOk = parseInt(userMixedWhole) === whole;
+      const mixDenOk = parseInt(userMixedDen) === den;
+      const mixNumOk = parseInt(userMixedNum) === num;
+
+      if (impDenOk && impNumOk && mixWholeOk && mixDenOk && mixNumOk) {
+        // 全部答對
+        playBeep(880, 'sine', 0.3);
+        scoreCount++;
+        document.getElementById('scoreText').textContent = scoreCount;
+        triggerPraiseModal();
+      } else {
+        // 答錯提示
+        playBeep(220, 'sawtooth', 0.25);
+        if (!impDenOk || !mixDenOk) {
+          showToast('分母不對喔！請再算算看「每個整體」被平分成幾份？');
+        } else if (!mixWholeOk) {
+          showToast('帶分數的整數不對喔！請數數看有幾個「塗滿的完整整體」？');
+        } else if (!impNumOk) {
+          showToast('假分數的分子不對喔！請數數看「全部共塗滿了幾個小區塊」？');
+        } else {
+          showToast('帶分數的分數部分分子不對喔！請看看「最後一個沒滿的整體塗了幾塊」？');
+        }
+      }
+    }
+
+    function triggerPraiseModal() {
+      const modal = document.getElementById('praiseModal');
+      const content = document.getElementById('modalContent');
+      const comparisonBox = document.getElementById('modalComparisonBox');
+
+      const { whole, num, den, improperNum } = currentQuestion;
+
+      // 生成兩側同步數值對照表，強化概念連結
+      const leftTitle = (leftType === 'improper') ? '假分數表示法' : '帶分數表示法';
+      const rightTitle = (rightType === 'improper') ? '假分數表示法' : '帶分數表示法';
+
+      const leftHTML = (leftType === 'improper') 
+        ? `<div class="flex flex-col items-center"><span class="text-3xl font-black text-sky-600">${improperNum}</span><div class="w-12 fraction-line my-1"></div><span class="text-3xl font-black text-emerald-600">${den}</span></div>`
+        : `<div class="flex items-center gap-1"><span class="text-3xl font-black text-purple-700">${whole}</span><div class="flex flex-col items-center"><span class="text-lg font-black text-sky-600 border-b border-slate-700 pb-0.5">${num}</span><span class="text-lg font-black text-emerald-600 pt-0.5">${den}</span></div></div>`;
+
+      const rightHTML = (rightType === 'improper') 
+        ? `<div class="flex flex-col items-center"><span class="text-3xl font-black text-sky-600">${improperNum}</span><div class="w-12 fraction-line my-1"></div><span class="text-3xl font-black text-emerald-600">${den}</span></div>`
+        : `<div class="flex items-center gap-1"><span class="text-3xl font-black text-purple-700">${whole}</span><div class="flex flex-col items-center"><span class="text-lg font-black text-sky-600 border-b border-slate-700 pb-0.5">${num}</span><span class="text-lg font-black text-emerald-600 pt-0.5">${den}</span></div></div>`;
+
+      comparisonBox.innerHTML = `
+        <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-sm">
+          <span class="text-xs font-bold text-slate-500 mb-2">左側：${leftTitle}</span>
+          ${leftHTML}
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-sm">
+          <span class="text-xs font-bold text-slate-500 mb-2">右側：${rightTitle}</span>
+          ${rightHTML}
+        </div>
+        <div class="col-span-2 text-center text-xs font-bold text-indigo-900 bg-indigo-50 p-2 rounded-lg">
+          💡 兩者皆代表：${improperNum} 個 1/${den}，也就是 ${whole} 個完整整體再加上 ${num}/${den}！
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-90');
+        content.classList.add('scale-100');
+      }, 50);
+    }
+
+    function closePraiseModal() {
+      const modal = document.getElementById('praiseModal');
+      const content = document.getElementById('modalContent');
+      modal.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-90');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    function showToast(msg) {
+      let toast = document.createElement('div');
+      toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white font-bold text-xs md:text-sm px-4 py-3 rounded-2xl shadow-xl z-50 flex items-center gap-2 max-w-md text-center border border-slate-600 animate-bounce";
+      toast.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400 text-base"></i> <span>${msg}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
